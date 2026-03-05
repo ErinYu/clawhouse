@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>MedDebate — 20 AI Doctors</title>
+<title>ClawHouse — 20 AI Doctors</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 :root{--bg:#06101f;--surf:#0d1a2e;--surf2:#132036;--border:#1c2e4a;--text:#e2e8f0;--muted:#4a6080;--accent:#3b82f6;--gold:#d97706}
@@ -123,7 +123,7 @@ textarea.case-ta::placeholder{color:var(--muted)}
 <header style="position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid rgba(255,255,255,.05);background:rgba(6,16,31,.85);backdrop-filter:blur(12px)">
   <div style="display:flex;align-items:center;gap:10px">
     <span style="font-size:26px">⚕️</span>
-    <span class="grad-text" style="font-size:20px;font-weight:900" id="h-title">MedDebate</span>
+    <span class="grad-text" style="font-size:20px;font-weight:900" id="h-title">ClawHouse</span>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div style="display:flex;gap:4px">
@@ -166,7 +166,7 @@ textarea.case-ta::placeholder{color:var(--muted)}
 
   <div style="text-align:center;margin-top:28px">
     <p style="font-size:12px;color:var(--muted);margin-bottom:8px" id="l-install-desc">Use in Slack, WhatsApp, Telegram — wherever OpenClaw runs</p>
-    <code style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 16px;font-size:13px;color:#4ade80">clawhub install meddebate</code>
+    <code style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 16px;font-size:13px;color:#4ade80">clawhub install clawhouse</code>
   </div>
 </div>
 
@@ -262,14 +262,14 @@ function genUUID() {
 // ── i18n ────────────────────────────────────────────────────────────────────
 const LANG = {
   en: {
-    title:'MedDebate', badge:'20 AI Specialists · Live Debate · Consensus',
+    title:'ClawHouse', badge:'20 AI Specialists · Live Debate · Consensus',
     ltitle:'What does your case', ltitle2:'really mean?',
     lsub:'Submit a patient case. Watch 20 AI medical specialists debate in real time — then reach consensus.',
     try:'Try a mystery case', custom:'Or describe your own case',
     placeholder:'Patient: 34F presenting with...\n\nSymptoms:\nHistory:\nLabs:',
     disc:'For educational purposes only. Not medical advice.',
     start:'Start Debate →', newcase:'← New Case',
-    install:'clawhub install meddebate',
+    install:'clawhub install clawhouse',
     install_desc:'Use in Slack, WhatsApp, Telegram — wherever OpenClaw runs',
     stage:'Doctor Stage', feed:'Live Debate',
     p1:'Phase 1: Independent Reasoning', p2:'Phase 2: Debate & Challenge',
@@ -296,7 +296,7 @@ const LANG = {
     placeholder:'患者：34岁女性，主诉……\n\n症状：\n病史：\n检查：',
     disc:'仅供教育演示，不构成医疗建议。',
     start:'开始辩论 →', newcase:'← 新病例',
-    install:'clawhub install meddebate',
+    install:'clawhub install clawhouse',
     install_desc:'在 Slack、WhatsApp、Telegram 等平台中使用',
     stage:'医生候诊室', feed:'实时辩论',
     p1:'第一阶段：独立诊断', p2:'第二阶段：辩论与质疑',
@@ -753,7 +753,7 @@ function renderConsensus(data) {
           </div>`).join('')}
       </div>
       <div style="border-top:1px solid rgba(255,255,255,.05);padding-top:16px">
-        <div style="font-family:monospace;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 16px;font-size:13px;color:#4ade80;margin-bottom:10px">$ clawhub install meddebate</div>
+        <div style="font-family:monospace;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 16px;font-size:13px;color:#4ade80;margin-bottom:10px">$ clawhub install clawhouse</div>
         <div style="display:flex;gap:8px">
           <button onclick="shareResult('${top?.diagnosis||''}')" class="submit-btn" style="flex:1">${t('share')}</button>
           <button onclick="resetToLanding()" class="skip-btn" style="flex:1">${t('newcase2')}</button>
@@ -774,8 +774,8 @@ function renderConsensus(data) {
 }
 
 function shareResult(dx) {
-  const txt = `I gave 20 AI doctors a mystery case.\nThey debated and reached consensus: ${dx}\n\nclawhub install meddebate`;
-  if(navigator.share) navigator.share({title:'MedDebate Result',text:txt}).catch(()=>{});
+  const txt = `I gave 20 AI doctors a mystery case.\nThey debated and reached consensus: ${dx}\n\nclawhub install clawhouse`;
+  if(navigator.share) navigator.share({title:'ClawHouse Result',text:txt}).catch(()=>{});
   else navigator.clipboard.writeText(txt).then(()=>alert('Copied!'));
 }
 

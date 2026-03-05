@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-MedDebate CLI - 20 AI medical specialists debate a patient case.
+ClawHouse CLI - 20 AI medical specialists debate a patient case.
 Used by OpenClaw skill via exec tool, and by web/backend.py.
 
 Usage:
@@ -194,7 +194,7 @@ async def run_debate_cli(case: str) -> dict:
     SEP = "=" * 65
 
     print(f"\n{SEP}")
-    print(f"  MEDDEBATE  |  {len(SPECIALISTS)} AI Specialists Analyzing Case")
+    print(f"  CLAWHOUSE  |  {len(SPECIALISTS)} AI Specialists Analyzing Case")
     print(f"{SEP}\n")
 
     # ── Phase 1 ──────────────────────────────────────────────────────
@@ -256,7 +256,7 @@ async def run_debate_cli(case: str) -> dict:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="MedDebate - AI medical diagnosis debate")
+    parser = argparse.ArgumentParser(description="ClawHouse - AI medical diagnosis debate")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--case", help="Patient case description")
     group.add_argument("--demo", choices=list(DEMO_CASES.keys()), help="Load a demo case")

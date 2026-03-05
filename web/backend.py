@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-MedDebate Web Backend - FastAPI SSE streaming server.
+ClawHouse Web Backend - FastAPI SSE streaming server.
 Run: python3 -m uvicorn backend:app --reload --port 8000
 """
 
@@ -25,7 +25,7 @@ sys.path.insert(0, _ROOT)
 from scripts.demo_cases import DEMO_CASES
 from scripts.specialists import SPECIALISTS
 
-app = FastAPI(title="MedDebate API")
+app = FastAPI(title="ClawHouse API")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 client = anthropic.AsyncAnthropic()

@@ -1,7 +1,7 @@
 ---
-name: meddebate
+name: clawhouse
 description: 20 AI medical specialists debate a patient case and reach a consensus diagnosis. Powered by Claude claude-sonnet-4-6 agents running in parallel.
-homepage: "https://github.com/yourusername/meddebate"
+homepage: "https://github.com/yourusername/clawhouse"
 user-invocable: true
 metadata:
   openclaw:
@@ -11,7 +11,7 @@ metadata:
     primaryEnv: "ANTHROPIC_API_KEY"
 ---
 
-# MedDebate Skill
+# ClawHouse Skill
 
 Simulate a hospital consultation room where 20 AI medical specialists simultaneously analyze a patient case, debate each other's diagnoses, and reach a consensus.
 
@@ -19,9 +19,9 @@ Simulate a hospital consultation room where 20 AI medical specialists simultaneo
 
 Invoke this skill when the user:
 - Describes a patient case with symptoms, history, or lab results
-- Says "meddebate [case]" or "/meddebate [case]"
+- Says "clawhouse [case]" or "/clawhouse [case]"
 - Asks to "diagnose this case" or "get specialist opinions on"
-- Wants to load a demo with "meddebate demo:lupus", "meddebate demo:wilson", "meddebate demo:lyme", "meddebate demo:lead"
+- Wants to load a demo with "clawhouse demo:lupus", "clawhouse demo:wilson", "clawhouse demo:lyme", "clawhouse demo:lead"
 
 ## How to Run
 

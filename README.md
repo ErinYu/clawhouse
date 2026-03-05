@@ -1,11 +1,23 @@
-# MedDebate
+# ClawHouse
 
 > 20 AI medical specialists debate your patient case in real time — then vote on a consensus diagnosis.
 
 **Install as an OpenClaw skill:**
 ```bash
-clawhub install meddebate
+clawhub install clawhouse
 ```
+
+---
+
+## The Name
+
+**ClawHouse = OpenClaw × Dr. House.**
+
+Dr. Gregory House — the misanthropic, cane-wielding diagnostician from *House M.D.* — runs a team of specialists who argue about every case until the truth surfaces. Differential diagnoses get shot down. Someone always changes their mind at the last minute. The answer is never lupus. (Except when it is.)
+
+That's exactly what happens here, except now there are 20 of them, they run in parallel, and one of them (`Dr. House`, Senior Diagnostician) is hardcoded to **challenge at least two colleagues every single round**.
+
+ClawHouse lives in the OpenClaw ecosystem — a 247k-star agent framework. The "Claw" ties it directly to the platform it's built on. The "House" tells you exactly what the vibe is.
 
 ---
 
@@ -74,7 +86,7 @@ graph TD
 
 ```
 ═══════════════════════════════════════════════════════════════════
-  MEDDEBATE  |  20 AI Specialists Analyzing Case
+  CLAWHOUSE  |  20 AI Specialists Analyzing Case
 ═══════════════════════════════════════════════════════════════════
 
 PHASE 1: Independent Reasoning
@@ -147,24 +159,24 @@ graph LR
 ### OpenClaw skill (recommended)
 
 ```bash
-clawhub install meddebate
+clawhub install clawhouse
 ```
 
 Then in any OpenClaw channel (Slack, WhatsApp, Telegram, Discord):
 
 ```
-/meddebate Patient: [your case]
-/meddebate demo:lupus
-/meddebate demo:wilson
-/meddebate demo:lyme
-/meddebate demo:lead
+/clawhouse Patient: [your case]
+/clawhouse demo:lupus
+/clawhouse demo:wilson
+/clawhouse demo:lyme
+/clawhouse demo:lead
 ```
 
 ### Web demo (local)
 
 ```bash
-git clone https://github.com/yourusername/meddebate
-cd meddebate
+git clone https://github.com/yourusername/clawhouse
+cd clawhouse
 
 pip install -r requirements.txt
 cp .env.example .env
@@ -199,7 +211,7 @@ python3 scripts/debate_engine.py --case "Patient: 45M, hemoptysis, weight loss, 
 ## Project structure
 
 ```
-meddebate/
+clawhouse/
 ├── SKILL.md               # OpenClaw skill manifest
 ├── README.md
 ├── requirements.txt
@@ -216,4 +228,4 @@ meddebate/
 
 ---
 
-> **Disclaimer:** MedDebate is for educational and demonstration purposes only. It is not a substitute for professional medical advice. Always consult qualified healthcare professionals for clinical decisions.
+> **Disclaimer:** ClawHouse is for educational and demonstration purposes only. It is not a substitute for professional medical advice. Always consult qualified healthcare professionals for clinical decisions.
