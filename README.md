@@ -19,6 +19,9 @@ That's exactly what happens here, except now there are 20 of them, they run in p
 
 ClawHouse lives in the OpenClaw ecosystem — a 247k-star agent framework. The "Claw" ties it directly to the platform it's built on. The "House" tells you exactly what the vibe is.
 
+<img width="3024" height="1648" alt="image" src="https://github.com/user-attachments/assets/76485e6c-5c83-4f5b-9b3d-994f012c1da2" />
+
+
 ---
 
 ## How it works
