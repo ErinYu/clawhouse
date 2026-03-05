@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>MedDebate — 20 AI Doctors</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+:root{--bg:#06101f;--surf:#0d1a2e;--surf2:#132036;--border:#1c2e4a;--text:#e2e8f0;--muted:#4a6080;--accent:#3b82f6;--gold:#d97706}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+.orb{position:fixed;border-radius:50%;filter:blur(110px);opacity:.1;pointer-events:none;animation:drift 14s ease-in-out infinite alternate}
+.o1{width:500px;height:500px;background:#3b82f6;top:-150px;left:-80px}
+.o2{width:400px;height:400px;background:#8b5cf6;bottom:-100px;right:-80px;animation-delay:-7s}
+.o3{width:350px;height:350px;background:#10b981;top:45%;left:35%;animation-delay:-3.5s}
+@keyframes drift{to{transform:translate(35px,25px) scale(1.08)}}
+.grad-text{background:linear-gradient(135deg,#60a5fa,#a78bfa 50%,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+/* ── Cartoon doctor characters ─────────────────────────────────── */
+.doc-figure{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;transition:transform .2s;position:relative}
+.doc-figure:hover{transform:scale(1.08)}
+.doc-aura{position:absolute;width:50px;height:50px;border-radius:50%;background:var(--c,#3b82f6);opacity:0;filter:blur(10px);top:0;transition:opacity .4s;pointer-events:none}
+.doc-head{width:48px;height:48px;border-radius:50%;background:#111e35;border:2.5px solid var(--c,#3b82f6);display:flex;align-items:center;justify-content:center;font-size:26px;position:relative;z-index:1;transition:border-color .3s,box-shadow .3s}
+.doc-coat{width:38px;height:24px;background:rgba(255,255,255,.93);border-radius:3px 3px 7px 7px;border-top:3px solid var(--c,#3b82f6);margin-top:-3px;position:relative;z-index:1}
+.doc-coat::after{content:'';position:absolute;width:12px;height:3px;background:var(--c,#3b82f6);border-radius:2px;bottom:5px;left:5px}
+.doc-label{font-size:8.5px;color:var(--muted);text-align:center;max-width:58px;line-height:1.25;margin-top:1px;transition:color .3s;white-space:pre-line}
+
+/* States */
+.doc-figure.idle .doc-head{animation:doc-idle 3.5s ease-in-out infinite}
+.doc-figure.speaking .doc-aura{opacity:.45}
+.doc-figure.speaking .doc-head{animation:doc-speak .45s ease-in-out infinite alternate;box-shadow:0 0 16px var(--c,#3b82f6)}
+.doc-figure.speaking .doc-label{color:var(--c,#3b82f6)}
+.doc-figure.challenging .doc-head{animation:doc-shake .45s ease-in-out}
+.doc-figure.challenged .doc-head{animation:doc-shock .4s ease-in-out}
+.doc-figure.changed .doc-head{animation:doc-nod .35s ease-in-out 2}
+.doc-figure.agreed .doc-aura{opacity:.25;background:#10b981}
+.doc-figure.agreed .doc-head{border-color:#10b981;box-shadow:0 0 12px #10b981}
+.doc-figure.done .doc-head{animation:doc-celebrate .6s ease-in-out}
+
+@keyframes doc-idle{0%,100%{transform:translateY(0)}50%{transform:translateY(-2.5px)}}
+@keyframes doc-speak{from{transform:scale(1)}to{transform:scale(1.12)}}
+@keyframes doc-shake{0%{transform:rotate(0)}20%{transform:rotate(-8deg) translateX(-3px)}40%{transform:rotate(8deg) translateX(3px)}60%{transform:rotate(-5deg)}80%{transform:rotate(4deg)}100%{transform:rotate(0)}}
+@keyframes doc-shock{0%{transform:scale(1) rotate(0)}25%{transform:scale(1.2) rotate(-12deg)}75%{transform:scale(1.1) rotate(10deg)}100%{transform:scale(1) rotate(0)}}
+@keyframes doc-nod{0%,100%{transform:rotate(0)}50%{transform:rotate(6deg)}}
+@keyframes doc-celebrate{0%{transform:translateY(0) rotate(0)}25%{transform:translateY(-8px) rotate(-5deg)}75%{transform:translateY(-6px) rotate(5deg)}100%{transform:translateY(0) rotate(0)}}
+
+/* ── Stage grid ────────────────────────────────────────────────── */
+#stage-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px 6px;padding:12px}
+@media(min-width:1024px){#stage-grid{grid-template-columns:repeat(4,1fr)}}
+
+/* ── Conversation feed ─────────────────────────────────────────── */
+.msg-row{display:flex;gap:10px;align-items:flex-start;opacity:0;transform:translateY(16px);animation:msgIn .38s ease forwards}
+.msg-row.user-row{flex-direction:row-reverse}
+@keyframes msgIn{to{opacity:1;transform:translateY(0)}}
+.msg-face{width:40px;height:40px;border-radius:50%;background:var(--surf2);border:2px solid var(--c,var(--border));display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.msg-bubble{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:12px 14px;flex:1;position:relative;border-left:3px solid var(--c,var(--border))}
+.msg-bubble.challenge-bubble{background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.35);border-left-color:#ef4444}
+.msg-bubble.agree-bubble{background:rgba(16,185,129,.05);border-color:rgba(16,185,129,.25);border-left-color:#10b981}
+.msg-bubble.changed-bubble{background:rgba(245,158,11,.06);border-color:rgba(245,158,11,.3);border-left-color:#f59e0b}
+.msg-bubble.user-bubble{background:linear-gradient(135deg,rgba(59,130,246,.12),rgba(139,92,246,.1));border-color:rgba(139,92,246,.35);border-right:3px solid #8b5cf6;border-left:none}
+.msg-name{font-weight:700;font-size:12px}
+.msg-badge{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600}
+.msg-dx{font-size:14px;font-weight:600;color:#fff;margin:6px 0 4px}
+.msg-conf-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.conf-bar{height:5px;flex:1;background:var(--border);border-radius:3px;overflow:hidden}
+.conf-fill{height:100%;border-radius:3px;background:var(--c,var(--accent));width:0;transition:width 1s ease}
+.conf-pct{font-size:11px;font-weight:700;color:var(--c,var(--accent));min-width:32px}
+.msg-ev{font-size:11px;color:#8a9fc0;line-height:1.5}
+.msg-ev span::before{content:'▸ ';color:var(--c,var(--accent))}
+.badge-challenged{font-size:10px;background:rgba(239,68,68,.2);color:#fca5a5;border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:1px 7px}
+.badge-changed{font-size:10px;background:rgba(245,158,11,.2);color:#fcd34d;border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:1px 7px}
+.badge-player{font-size:10px;background:rgba(139,92,246,.2);color:#c4b5fd;border:1px solid rgba(139,92,246,.4);border-radius:8px;padding:1px 7px}
+.player-response{margin-top:7px;padding:7px 10px;background:rgba(139,92,246,.08);border-left:2px solid #8b5cf6;border-radius:0 6px 6px 0;font-size:11px;color:#c4b5fd;font-style:italic}
+
+/* ── Phase banner ──────────────────────────────────────────────── */
+.phase-banner{background:linear-gradient(90deg,rgba(59,130,246,.12),rgba(139,92,246,.08));border:1px solid rgba(59,130,246,.25);border-radius:12px;padding:12px 18px;display:flex;align-items:center;gap:12px}
+.pulse{width:9px;height:9px;border-radius:50%;background:#3b82f6;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.65)}}
+
+/* ── User turn panel ───────────────────────────────────────────── */
+#user-panel{background:linear-gradient(135deg,rgba(99,102,241,.1),rgba(139,92,246,.08));border:1px solid rgba(99,102,241,.35);border-radius:16px;padding:18px;margin-bottom:14px}
+.countdown-ring{position:relative;width:52px;height:52px;flex-shrink:0}
+.countdown-ring svg{transform:rotate(-90deg)}
+.countdown-ring circle{fill:none;stroke-width:4}
+.ring-bg{stroke:rgba(99,102,241,.2)}
+.ring-fill{stroke:#6366f1;stroke-dasharray:138;stroke-dashoffset:0;transition:stroke-dashoffset 1s linear}
+.ring-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#a5b4fc}
+#user-dx-input{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(99,102,241,.3);border-radius:10px;padding:10px 14px;color:#e2e8f0;font-size:13px;resize:none;outline:none;transition:border-color .2s}
+#user-dx-input:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+#user-dx-input::placeholder{color:#4a6080}
+.submit-btn{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:10px;padding:10px 18px;font-weight:700;font-size:13px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.submit-btn:hover{transform:translateY(-1px);box-shadow:0 5px 18px rgba(99,102,241,.4)}
+.skip-btn{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:10px 14px;font-size:12px;cursor:pointer;transition:all .2s}
+.skip-btn:hover{border-color:var(--muted);color:var(--text)}
+
+/* ── Consensus ─────────────────────────────────────────────────── */
+#consensus-panel{background:linear-gradient(135deg,rgba(13,26,46,.98),rgba(18,32,54,.98));border:1px solid rgba(59,130,246,.35);border-radius:18px;padding:24px;animation:consIn .55s cubic-bezier(.34,1.56,.64,1) forwards;opacity:0;transform:scale(.94) translateY(16px)}
+@keyframes consIn{to{opacity:1;transform:scale(1) translateY(0)}}
+.rank-bar-bg{height:7px;flex:1;background:var(--border);border-radius:4px;overflow:hidden}
+.rank-fill{height:100%;border-radius:4px;width:0;transition:width 1.1s ease}
+
+/* ── Demo + start buttons ──────────────────────────────────────── */
+.demo-btn{background:var(--surf2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;cursor:pointer;text-align:left;color:var(--text);transition:all .2s;width:100%}
+.demo-btn:hover{border-color:var(--accent);background:rgba(59,130,246,.1);transform:translateY(-1px)}
+.start-btn{background:linear-gradient(135deg,#3b82f6,#8b5cf6);border:none;color:#fff;border-radius:12px;padding:13px 28px;font-weight:800;font-size:15px;cursor:pointer;transition:all .2s}
+.start-btn:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(59,130,246,.4)}
+.start-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+textarea.case-ta{width:100%;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px;padding:14px;color:var(--text);font-size:13px;resize:none;outline:none;transition:border-color .2s;line-height:1.6}
+textarea.case-ta:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+textarea.case-ta::placeholder{color:var(--muted)}
+.lang-btn{background:var(--surf2);border:1px solid var(--border);border-radius:20px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer;color:var(--text);transition:all .2s}
+.lang-btn:hover,.lang-btn.active{background:rgba(59,130,246,.15);border-color:var(--accent);color:#93c5fd}
+.openclaw-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(217,119,6,.1);border:1px solid rgba(217,119,6,.28);border-radius:20px;padding:4px 11px;font-size:11px;color:#fbbf24}
+.house-card{border-color:rgba(217,119,6,.5)!important;box-shadow:0 0 18px rgba(217,119,6,.12)}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+</style>
+</head>
+<body>
+<div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+
+<!-- ══ HEADER ══ -->
+<header style="position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid rgba(255,255,255,.05);background:rgba(6,16,31,.85);backdrop-filter:blur(12px)">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:26px">⚕️</span>
+    <span class="grad-text" style="font-size:20px;font-weight:900" id="h-title">MedDebate</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <div style="display:flex;gap:4px">
+      <button class="lang-btn active" id="btn-en" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" id="btn-zh" onclick="setLang('zh')">中文</button>
+    </div>
+    <span class="openclaw-badge">🦞 OpenClaw</span>
+  </div>
+</header>
+
+<!-- ══ LANDING ══ -->
+<div id="landing" style="max-width:720px;margin:0 auto;padding:40px 20px 60px">
+  <div style="text-align:center;margin-bottom:36px">
+    <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);border-radius:20px;padding:5px 14px;font-size:12px;color:#93c5fd;margin-bottom:18px">
+      <span class="pulse"></span>
+      <span id="l-badge">20 AI Specialists · Live Debate · Consensus Diagnosis</span>
+    </div>
+    <h1 style="font-size:clamp(36px,6vw,58px);font-weight:900;line-height:1.1;margin-bottom:14px">
+      <span class="grad-text" id="l-title">What does your case</span><br>
+      <span style="color:#fff" id="l-title2">really mean?</span>
+    </h1>
+    <p style="color:#64748b;font-size:16px;max-width:480px;margin:0 auto" id="l-sub">
+      Submit a patient case. Watch 20 AI medical specialists debate in real time — then reach consensus.
+    </p>
+  </div>
+
+  <!-- Demo cases -->
+  <p class="label" id="l-try" style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Try a mystery case</p>
+  <div id="demo-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px"></div>
+
+  <!-- Custom input -->
+  <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:20px">
+    <p style="font-size:12px;font-weight:600;color:#94a3b8;margin-bottom:10px" id="l-custom">Or describe your own case</p>
+    <textarea id="case-input" class="case-ta" rows="5"></textarea>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;gap:12px">
+      <p style="font-size:11px;color:var(--muted)" id="l-disc">For educational purposes only.</p>
+      <button class="start-btn" onclick="startFromInput()" id="l-start">Start Debate →</button>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:28px">
+    <p style="font-size:12px;color:var(--muted);margin-bottom:8px" id="l-install-desc">Use in Slack, WhatsApp, Telegram — wherever OpenClaw runs</p>
+    <code style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 16px;font-size:13px;color:#4ade80">clawhub install meddebate</code>
+  </div>
+</div>
+
+<!-- ══ DEBATE ROOM ══ -->
+<div id="debate-room" style="display:none;max-width:1400px;margin:0 auto;padding:16px 16px 60px">
+
+  <!-- Case header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+    <div>
+      <h2 style="font-size:18px;font-weight:800;color:#fff" id="dr-title"></h2>
+      <p style="font-size:12px;color:var(--muted);margin-top:2px" id="dr-sub"></p>
+    </div>
+    <button onclick="resetToLanding()" style="font-size:12px;color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:7px 14px;background:transparent;cursor:pointer;transition:color .2s" id="l-newcase">← New Case</button>
+  </div>
+
+  <!-- Phase banner -->
+  <div class="phase-banner" style="margin-bottom:16px">
+    <div class="pulse" id="phase-dot"></div>
+    <div>
+      <div style="font-weight:700;color:#fff;font-size:14px" id="phase-label">Initializing...</div>
+      <div style="font-size:12px;color:var(--muted)" id="phase-progress"></div>
+    </div>
+    <div style="margin-left:auto;font-size:12px;color:var(--muted)" id="phase-counter"></div>
+  </div>
+
+  <!-- Two-panel layout -->
+  <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+
+    <!-- LEFT: Character Stage -->
+    <div style="width:300px;flex-shrink:0;background:var(--surf);border:1px solid var(--border);border-radius:16px;overflow:hidden">
+      <div style="padding:12px 16px 4px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em" id="l-stage">Doctor Stage</span>
+        <span style="font-size:11px;color:var(--muted)" id="stage-count">0 / 20</span>
+      </div>
+      <div id="stage-grid"></div>
+    </div>
+
+    <!-- RIGHT: Conversation feed -->
+    <div style="flex:1;min-width:320px">
+
+      <!-- Feed header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em" id="l-feed">Live Debate</span>
+        <span style="font-size:11px;color:var(--muted)" id="feed-counter"></span>
+      </div>
+
+      <!-- User turn panel (hidden initially) -->
+      <div id="user-panel" style="display:none">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px">
+          <div class="countdown-ring">
+            <svg width="52" height="52"><circle class="ring-bg" cx="26" cy="26" r="22"/><circle class="ring-fill" id="ring-fill" cx="26" cy="26" r="22"/></svg>
+            <div class="ring-num" id="ring-num">30</div>
+          </div>
+          <div>
+            <div style="font-weight:800;color:#a5b4fc;font-size:14px" id="l-your-turn">🎮 Your Turn, Doctor!</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px" id="l-your-sub">Submit your diagnosis before Phase 2 begins</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+          <span style="font-size:22px">🙋</span>
+          <span style="font-size:12px;color:#c4b5fd;font-weight:600" id="l-your-role">You (Player)</span>
+        </div>
+        <textarea id="user-dx-input" rows="2" style="margin-bottom:10px"></textarea>
+        <div style="display:flex;gap:8px">
+          <button class="submit-btn" onclick="submitUserDx()" id="l-submit">Submit My Verdict →</button>
+          <button class="skip-btn" onclick="skipUserTurn()" id="l-skip">Skip & Watch</button>
+        </div>
+      </div>
+
+      <!-- Conversation messages -->
+      <div id="conversation" style="display:flex;flex-direction:column;gap:10px;max-height:75vh;overflow-y:auto;padding-right:4px"></div>
+
+      <!-- Consensus (hidden initially) -->
+      <div id="consensus-container" style="margin-top:16px;display:none"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ JAVASCRIPT ══ -->
+<script>
+const API = window.location.origin;
+
+// UUID polyfill for older Safari / non-HTTPS contexts
+function genUUID() {
+  if(typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random()*16|0, v = c==='x'?r:(r&0x3|0x8);
+    return v.toString(16);
+  });
+}
+
+// ── i18n ────────────────────────────────────────────────────────────────────
+const LANG = {
+  en: {
+    title:'MedDebate', badge:'20 AI Specialists · Live Debate · Consensus',
+    ltitle:'What does your case', ltitle2:'really mean?',
+    lsub:'Submit a patient case. Watch 20 AI medical specialists debate in real time — then reach consensus.',
+    try:'Try a mystery case', custom:'Or describe your own case',
+    placeholder:'Patient: 34F presenting with...\n\nSymptoms:\nHistory:\nLabs:',
+    disc:'For educational purposes only. Not medical advice.',
+    start:'Start Debate →', newcase:'← New Case',
+    install:'clawhub install meddebate',
+    install_desc:'Use in Slack, WhatsApp, Telegram — wherever OpenClaw runs',
+    stage:'Doctor Stage', feed:'Live Debate',
+    p1:'Phase 1: Independent Reasoning', p2:'Phase 2: Debate & Challenge',
+    cons:'Consensus Reached ✓',
+    p1prog:(n,t)=>`${n} of ${t} specialists responded`,
+    p2prog:(n,t)=>`${n} of ${t} specialists debating`,
+    your_turn:'🎮 Your Turn, Doctor!',
+    your_sub:'Submit your diagnosis before Phase 2 begins',
+    your_role:'You (Player)', placeholder_dx:'Enter your diagnosis and reasoning...',
+    submit:'Submit My Verdict →', skip:'Skip & Watch',
+    countdown_pre:'Phase 2 starts in', countdown_suf:'s',
+    top_dx:'Top Diagnosis', votes:'votes', agree_specialists:'specialists agree',
+    share:'Share Result →', newcase2:'New Case',
+    you:'You', player:'Player',
+    challenged:'⚔️ CHALLENGED', changed:'🔄 Changed Mind', agrees_with:'agrees with',
+    player_says:'Player diagnosed:',
+    responding_to_player:'Responding to player:',
+  },
+  zh: {
+    title:'医论', badge:'20位AI专科医生 · 实时辩论 · 形成共识',
+    ltitle:'您的病例', ltitle2:'究竟意味着什么？',
+    lsub:'提交一个病例，看20位AI医学专家实时辩论——最终达成共识诊断。',
+    try:'试试这些经典谜题病例', custom:'或输入您自己的病例',
+    placeholder:'患者：34岁女性，主诉……\n\n症状：\n病史：\n检查：',
+    disc:'仅供教育演示，不构成医疗建议。',
+    start:'开始辩论 →', newcase:'← 新病例',
+    install:'clawhub install meddebate',
+    install_desc:'在 Slack、WhatsApp、Telegram 等平台中使用',
+    stage:'医生候诊室', feed:'实时辩论',
+    p1:'第一阶段：独立诊断', p2:'第二阶段：辩论与质疑',
+    cons:'已达成共识 ✓',
+    p1prog:(n,t)=>`${n} / ${t} 位专家已回复`,
+    p2prog:(n,t)=>`${n} / ${t} 位专家参与辩论`,
+    your_turn:'🎮 轮到您了，医生！',
+    your_sub:'在第二阶段开始前提交您的诊断',
+    your_role:'您（玩家）', placeholder_dx:'输入您的诊断和推理……',
+    submit:'提交我的诊断 →', skip:'跳过，直接观看',
+    countdown_pre:'第二阶段将在', countdown_suf:'秒后开始',
+    top_dx:'共识诊断', votes:'票', agree_specialists:'位专家同意',
+    share:'分享结果 →', newcase2:'新病例',
+    you:'您', player:'玩家',
+    challenged:'⚔️ 被质疑', changed:'🔄 改变诊断', agrees_with:'同意',
+    player_says:'玩家诊断：',
+    responding_to_player:'回应玩家：',
+  }
+};
+
+// ── State ───────────────────────────────────────────────────────────────────
+const S = {
+  lang: 'en', sessionId: null,
+  phase: 0,   // 0=landing 1=phase1 2=userturn 3=phase2 4=done
+  caseText: '', demoKey: null,
+  p1Count: 0, p2Count: 0,
+  phase1Results: [], userDx: null,
+  timer: null, timerSec: 30,
+};
+
+function t(k){ const v=LANG[S.lang][k]; return typeof v==='function'?v:v||k; }
+function tf(k,...a){ const v=LANG[S.lang][k]; return typeof v==='function'?v(...a):v||k; }
+
+// ── Specialist metadata ─────────────────────────────────────────────────────
+const SPECS = {
+  triage:    {emoji:'👩‍⚕️',color:'#ef4444',label:'Alex\nTriage'},
+  internal:  {emoji:'🧑🏿‍⚕️',color:'#3b82f6',label:'Dr.Okafor\nIntern.Med'},
+  cardio:    {emoji:'👨‍⚕️',color:'#dc2626',label:'Dr.Webb\nCardio'},
+  neuro:     {emoji:'👩🏽‍⚕️',color:'#8b5cf6',label:'Dr.Kapoor\nNeuro'},
+  id:        {emoji:'👨🏿‍⚕️',color:'#10b981',label:'Dr.Nkosi\nInfect.Dis'},
+  rheum:     {emoji:'👩🏻‍⚕️',color:'#f59e0b',label:'Dr.Vasquez\nRheum'},
+  endo:      {emoji:'👨🏻‍⚕️',color:'#ec4899',label:'Dr.Park\nEndo'},
+  onco:      {emoji:'👩🏾‍⚕️',color:'#6366f1',label:'Dr.Brennan\nOnco'},
+  pulm:      {emoji:'👨🏽‍⚕️',color:'#14b8a6',label:'Dr.Reyes\nPulm'},
+  gastro:    {emoji:'👩🏽‍⚕️',color:'#f97316',label:'Dr.Ahmad\nGastro'},
+  heme:      {emoji:'👨🏼‍⚕️',color:'#b91c1c',label:'Dr.Johansson\nHeme'},
+  nephro:    {emoji:'👩🏾‍⚕️',color:'#0891b2',label:'Dr.Al-Rashid\nNephro'},
+  radiology: {emoji:'👨🏻‍⚕️',color:'#7c3aed',label:'Dr.Wei\nRadio'},
+  path:      {emoji:'👩🏻‍⚕️',color:'#92400e',label:'Dr.Tanaka\nPath'},
+  derm:      {emoji:'🧑🏿‍⚕️',color:'#be185d',label:'Dr.Mensah\nDerm'},
+  psych:     {emoji:'👩🏼‍⚕️',color:'#4338ca',label:'Dr.Goldstein\nPsych'},
+  immuno:    {emoji:'👨🏽‍⚕️',color:'#047857',label:'Dr.DiLuca\nImmuno'},
+  genetics:  {emoji:'👩🏾‍⚕️',color:'#9333ea',label:'Dr.Diallo\nGenetics'},
+  er:        {emoji:'👩🏼‍⚕️',color:'#dc2626',label:'Dr.Sorensen\nER'},
+  critic:    {emoji:'🧙‍♂️',color:'#d97706',label:'Dr.House\nDiag.'},
+};
+
+// ── Language ────────────────────────────────────────────────────────────────
+function setLang(l) {
+  S.lang = l;
+  document.getElementById('btn-en').classList.toggle('active', l==='en');
+  document.getElementById('btn-zh').classList.toggle('active', l==='zh');
+  updateText();
+}
+
+function detectLang(text) {
+  return (text.match(/[\u4e00-\u9fff]/g)||[]).length > 3 ? 'zh' : 'en';
+}
+
+function updateText() {
+  const L = t;
+  document.getElementById('h-title').textContent = L('title');
+  document.getElementById('l-badge').textContent = L('badge');
+  document.getElementById('l-title').textContent = L('ltitle');
+  document.getElementById('l-title2').textContent = L('ltitle2');
+  document.getElementById('l-sub').textContent = L('lsub');
+  document.getElementById('l-try').textContent = L('try');
+  document.getElementById('l-custom').textContent = L('custom');
+  document.getElementById('case-input').placeholder = L('placeholder');
+  document.getElementById('l-disc').textContent = L('disc');
+  document.getElementById('l-start').textContent = L('start');
+  document.getElementById('l-install-desc').textContent = L('install_desc');
+  document.getElementById('l-newcase').textContent = L('newcase');
+  document.getElementById('l-stage').textContent = L('stage');
+  document.getElementById('l-feed').textContent = L('feed');
+  const up = document.getElementById('user-panel');
+  if(up.style.display !== 'none'){
+    document.getElementById('l-your-turn').textContent = L('your_turn');
+    document.getElementById('l-your-sub').textContent = L('your_sub');
+    document.getElementById('l-your-role').textContent = L('your_role');
+    document.getElementById('user-dx-input').placeholder = L('placeholder_dx');
+    document.getElementById('l-submit').textContent = L('submit');
+    document.getElementById('l-skip').textContent = L('skip');
+  }
+}
+
+// ── Stage grid ──────────────────────────────────────────────────────────────
+function buildStage() {
+  const grid = document.getElementById('stage-grid');
+  grid.innerHTML = '';
+  const allIds = Object.keys(SPECS);
+  allIds.forEach((id,i) => {
+    const sp = SPECS[id];
+    const div = document.createElement('div');
+    div.className = 'doc-figure idle';
+    div.id = `sf-${id}`;
+    div.style.setProperty('--c', sp.color);
+    div.style.animationDelay = `${i*0.12}s`;
+    div.innerHTML = `
+      <div class="doc-aura"></div>
+      <div class="doc-head">${sp.emoji}</div>
+      <div class="doc-coat"></div>
+      <div class="doc-label">${sp.label}</div>`;
+    div.title = id;
+    grid.appendChild(div);
+  });
+}
+
+function setCharState(id, state, duration=2000) {
+  const el = document.getElementById(`sf-${id}`);
+  if(!el) return;
+  el.className = `doc-figure ${state}`;
+  if(duration && state !== 'idle'){
+    setTimeout(() => { el.className = 'doc-figure idle'; }, duration);
+  }
+}
+
+// ── Load demo cases ─────────────────────────────────────────────────────────
+async function loadDemos() {
+  try {
+    const r = await fetch(`${API}/api/cases/demo`);
+    const demos = await r.json();
+    const grid = document.getElementById('demo-grid');
+    const icons = {lupus:'🔴',wilson:'🟡',lyme:'🟢',lead:'🔵'};
+    grid.innerHTML = '';
+    Object.entries(demos).forEach(([k,v]) => {
+      const btn = document.createElement('button');
+      btn.className = 'demo-btn';
+      btn.innerHTML = `<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><span>${icons[k]||'🔵'}</span><span style="font-size:13px;font-weight:700">${v.title}</span></div><div style="font-size:11px;color:var(--muted)">${v.subtitle}</div>`;
+      btn.onclick = () => startDebate(null, k, v.title, v.subtitle);
+      grid.appendChild(btn);
+    });
+  } catch(e) {
+    document.getElementById('demo-grid').innerHTML = `<p style="color:var(--muted);font-size:12px;grid-column:span 2">Backend not reachable. Start uvicorn first.</p>`;
+  }
+}
+
+// ── Start debate ─────────────────────────────────────────────────────────────
+function startFromInput() {
+  const ta = document.getElementById('case-input');
+  const txt = ta ? ta.value.trim() : '';
+  if(!txt){
+    if(ta){
+      ta.style.borderColor='#ef4444';
+      ta.style.boxShadow='0 0 0 3px rgba(239,68,68,.18)';
+      ta.style.animation='shake .35s ease';
+      ta.focus();
+      setTimeout(()=>{ ta.style.borderColor=''; ta.style.boxShadow=''; ta.style.animation=''; },800);
+    }
+    return;
+  }
+  const detectedLang = detectLang(txt);
+  if(detectedLang !== S.lang) setLang(detectedLang);
+  startDebate(txt, null, t('ltitle'), txt.slice(0,70)+'…');
+}
+
+function startDebate(caseText, demoKey, title, subtitle) {
+  S.sessionId = genUUID();
+  S.caseText = caseText;
+  S.demoKey = demoKey;
+  S.p1Count = 0; S.p2Count = 0;
+  S.phase1Results = []; S.userDx = null;
+
+  // Show debate room
+  document.getElementById('landing').style.display = 'none';
+  document.getElementById('debate-room').style.display = 'block';
+  document.getElementById('dr-title').textContent = title;
+  document.getElementById('dr-sub').textContent = subtitle;
+  document.getElementById('conversation').innerHTML = '';
+  document.getElementById('consensus-container').style.display = 'none';
+  document.getElementById('consensus-container').innerHTML = '';
+  document.getElementById('user-panel').style.display = 'none';
+  document.getElementById('stage-count').textContent = '0 / 20';
+  document.getElementById('feed-counter').textContent = '';
+
+  buildStage();
+  runPhase1();
+}
+
+// ── Phase 1 ─────────────────────────────────────────────────────────────────
+function runPhase1() {
+  S.phase = 1;
+  document.getElementById('phase-dot').style.background = '#3b82f6';
+  document.getElementById('phase-label').textContent = t('p1');
+  document.getElementById('phase-progress').textContent = tf('p1prog', 0, 20);
+
+  const params = S.demoKey
+    ? `demo=${S.demoKey}&lang=${S.lang}&session_id=${S.sessionId}`
+    : `case=${encodeURIComponent(S.caseText)}&lang=${S.lang}&session_id=${S.sessionId}`;
+  const es = new EventSource(`${API}/api/debate/phase1?${params}`);
+  es.onmessage = e => {
+    const ev = JSON.parse(e.data);
+    if(ev.type==='agent_result'){
+      S.p1Count++;
+      S.phase1Results.push(ev.result);
+      document.getElementById('stage-count').textContent = `${S.p1Count} / 20`;
+      document.getElementById('phase-progress').textContent = tf('p1prog', S.p1Count, 20);
+      renderP1Card(ev.result);
+      setCharState(ev.result.specialist.id, 'speaking', 2200);
+    } else if(ev.type==='phase1_complete'||ev.type==='done'){
+      es.close();
+      if(ev.type==='phase1_complete') showUserTurn();
+    }
+  };
+  es.onerror = () => { es.close(); };
+}
+
+// ── Render Phase 1 card ──────────────────────────────────────────────────────
+function renderP1Card(result) {
+  const s = result.specialist;
+  const sp = SPECS[s.id] || {emoji:'👨‍⚕️',color:'#3b82f6'};
+  const isHouse = s.id==='critic';
+  const conf = result.confidence||0;
+  const ev = (result.evidence||[]).slice(0,3);
+
+  const row = document.createElement('div');
+  row.className = 'msg-row';
+  row.innerHTML = `
+    <div class="msg-face" style="--c:${sp.color}">${sp.emoji}</div>
+    <div class="msg-bubble ${isHouse?'house-card':''}" style="--c:${sp.color}">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px">
+        <span class="msg-name">${s.name}</span>
+        <span class="msg-badge" style="background:${sp.color}22;border:1px solid ${sp.color}44;color:${sp.color}">${s.title}</span>
+        ${isHouse?`<span class="msg-badge" style="background:#d9770622;border:1px solid #d9770644;color:#fbbf24">Senior</span>`:''}
+      </div>
+      <div class="msg-dx">${result.diagnosis||'?'}</div>
+      ${result.icd10?`<div style="font-size:10px;color:var(--muted);margin-bottom:6px">${result.icd10}</div>`:''}
+      <div class="msg-conf-row">
+        <div class="conf-bar"><div class="conf-fill" id="cf-${s.id}"></div></div>
+        <span class="conf-pct" style="color:${sp.color}">${conf}%</span>
+      </div>
+      ${ev.length?`<div class="msg-ev">${ev.map(e=>`<span>${e}</span>`).join('<br>')}</div>`:''}
+    </div>`;
+
+  const feed = document.getElementById('conversation');
+  feed.appendChild(row);
+  feed.scrollTop = feed.scrollHeight;
+
+  requestAnimationFrame(()=>setTimeout(()=>{
+    const bar = document.getElementById(`cf-${s.id}`);
+    if(bar) bar.style.width = `${conf}%`;
+  },100));
+}
+
+// ── User turn ────────────────────────────────────────────────────────────────
+function showUserTurn() {
+  S.phase = 2;
+  document.getElementById('phase-label').textContent = t('your_turn');
+  document.getElementById('phase-dot').style.background = '#6366f1';
+
+  const up = document.getElementById('user-panel');
+  up.style.display = 'block';
+  document.getElementById('l-your-turn').textContent = t('your_turn');
+  document.getElementById('l-your-sub').textContent = t('your_sub');
+  document.getElementById('l-your-role').textContent = t('your_role');
+  document.getElementById('user-dx-input').placeholder = t('placeholder_dx');
+  document.getElementById('l-submit').textContent = t('submit');
+  document.getElementById('l-skip').textContent = t('skip');
+  document.getElementById('user-dx-input').value = '';
+
+  S.timerSec = 30;
+  updateCountdown();
+  S.timer = setInterval(()=>{
+    S.timerSec--;
+    updateCountdown();
+    if(S.timerSec<=0){ clearInterval(S.timer); skipUserTurn(); }
+  }, 1000);
+}
+
+function updateCountdown() {
+  document.getElementById('ring-num').textContent = S.timerSec;
+  const fill = document.getElementById('ring-fill');
+  const pct = S.timerSec/30;
+  fill.style.strokeDashoffset = 138*(1-pct);
+  fill.style.stroke = S.timerSec > 10 ? '#6366f1' : '#ef4444';
+}
+
+function skipUserTurn() {
+  clearInterval(S.timer);
+  document.getElementById('user-panel').style.display = 'none';
+  runPhase2();
+}
+
+function submitUserDx() {
+  const val = document.getElementById('user-dx-input').value.trim();
+  if(!val) return;
+  clearInterval(S.timer);
+  S.userDx = val;
+  document.getElementById('user-panel').style.display = 'none';
+
+  // POST to backend
+  fetch(`${API}/api/debate/user_input/${S.sessionId}?user_diagnosis=${encodeURIComponent(val)}`, {method:'POST'});
+
+  // Render user message
+  renderUserMsg(val);
+  runPhase2();
+}
+
+function renderUserMsg(text) {
+  const row = document.createElement('div');
+  row.className = 'msg-row user-row';
+  row.innerHTML = `
+    <div class="msg-bubble user-bubble" style="--c:#8b5cf6">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+        <span class="msg-name">${t('you')}</span>
+        <span class="badge-player">${t('player')}</span>
+      </div>
+      <div class="msg-dx">${text}</div>
+    </div>
+    <div class="msg-face" style="--c:#8b5cf6;font-size:24px">🙋</div>`;
+  const feed = document.getElementById('conversation');
+  feed.appendChild(row);
+  feed.scrollTop = feed.scrollHeight;
+}
+
+// ── Phase 2 ─────────────────────────────────────────────────────────────────
+function runPhase2() {
+  S.phase = 3;
+  document.getElementById('phase-dot').style.background = '#8b5cf6';
+  document.getElementById('phase-label').textContent = t('p2');
+  document.getElementById('phase-progress').textContent = tf('p2prog', 0, 20);
+
+  const es = new EventSource(`${API}/api/debate/phase2/${S.sessionId}?lang=${S.lang}`);
+  es.onmessage = e => {
+    const ev = JSON.parse(e.data);
+    if(ev.type==='debate'){
+      S.p2Count++;
+      document.getElementById('feed-counter').textContent = tf('p2prog', S.p2Count, 20);
+      document.getElementById('phase-progress').textContent = tf('p2prog', S.p2Count, 20);
+      renderDebateCard(ev.result);
+
+      const hasChallenge = (ev.result.challenges||[]).length > 0;
+      setCharState(ev.result.specialist.id, hasChallenge?'challenging':'speaking', 2000);
+      (ev.result.challenges||[]).forEach(c=>{
+        const cid = findSpecId(c.doctor);
+        if(cid) setCharState(cid, 'challenged', 1800);
+      });
+      if(ev.result.changed_mind) setCharState(ev.result.specialist.id, 'changed', 2000);
+      if((ev.result.agrees_with||[]).length && !hasChallenge && !ev.result.changed_mind)
+        setCharState(ev.result.specialist.id, 'agreed', 2000);
+
+    } else if(ev.type==='consensus'){
+      renderConsensus(ev.data);
+    } else if(ev.type==='done'){
+      es.close();
+      S.phase = 4;
+      document.getElementById('phase-label').textContent = t('cons');
+      document.getElementById('phase-dot').style.background = '#10b981';
+      // Celebrate all characters
+      Object.keys(SPECS).forEach(id=>setCharState(id,'done',1500));
+    }
+  };
+  es.onerror = ()=>es.close();
+}
+
+function findSpecId(name) {
+  // Match by substring of name
+  const stripped = name.replace('Dr.','').trim().toLowerCase();
+  return Object.entries(SPECS).find(([id])=>{
+    const label = SPECS[id].label.toLowerCase();
+    return label.includes(stripped) || stripped.includes(id);
+  })?.[0] || null;
+}
+
+function renderDebateCard(result) {
+  const s = result.specialist;
+  const sp = SPECS[s.id]||{emoji:'👨‍⚕️',color:'#3b82f6'};
+  const isHouse = s.id==='critic';
+  const challenges = result.challenges||[];
+  const agrees = result.agrees_with||[];
+  const changed = result.changed_mind;
+  const playerResp = result.player_response||'';
+
+  let bubbleClass = '';
+  let badges = '';
+  if(challenges.length){ bubbleClass='challenge-bubble'; badges+=`<span class="badge-challenged">${t('challenged')}</span>`; }
+  if(changed){ bubbleClass='changed-bubble'; badges+=`<span class="badge-changed">${t('changed')}</span>`; }
+  if(!challenges.length && !changed && agrees.length){ bubbleClass='agree-bubble'; }
+  if(playerResp){ badges+=`<span class="badge-player">→ Player</span>`; }
+
+  const challengeLines = challenges.map(c=>`<div style="display:flex;gap:6px;margin-top:4px"><span style="color:#fca5a5">⚔️</span><span style="font-size:11px;color:#fca5a5"><b>${c.doctor}:</b> ${c.reason}</span></div>`).join('');
+  const agreeLines = agrees.length && !challenges.length
+    ? `<div style="font-size:11px;color:#6ee7b7;margin-top:4px">✓ ${t('agrees_with')} ${agrees.join(', ')}</div>`
+    : '';
+  const playerRespHtml = playerResp
+    ? `<div class="player-response">${t('responding_to_player')} ${playerResp}</div>`
+    : '';
+
+  const row = document.createElement('div');
+  row.className = 'msg-row';
+  row.innerHTML = `
+    <div class="msg-face" style="--c:${sp.color}">${sp.emoji}</div>
+    <div class="msg-bubble ${bubbleClass} ${isHouse?'house-card':''}" style="--c:${sp.color}">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+        <span class="msg-name">${s.name}</span>
+        <span class="msg-badge" style="background:${sp.color}22;border:1px solid ${sp.color}44;color:${sp.color}">${s.title}</span>
+        ${badges}
+      </div>
+      <div class="msg-dx">${result.final_diagnosis}</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">${result.reasoning||''}</div>
+      ${challengeLines}${agreeLines}${playerRespHtml}
+    </div>`;
+
+  const feed = document.getElementById('conversation');
+  feed.appendChild(row);
+  feed.scrollTop = feed.scrollHeight;
+}
+
+// ── Consensus ────────────────────────────────────────────────────────────────
+function renderConsensus(data) {
+  const ranked = data.ranked||[];
+  const top = ranked[0];
+  const colors = ['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444'];
+  const cc = document.getElementById('consensus-container');
+  cc.style.display = 'block';
+  cc.innerHTML = `
+    <div id="consensus-panel">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+        <div style="width:44px;height:44px;border-radius:50%;background:rgba(16,185,129,.15);display:flex;align-items:center;justify-content:center;font-size:22px">✓</div>
+        <div>
+          <div style="font-weight:800;color:#fff;font-size:18px">${t('cons')}</div>
+          <div style="font-size:12px;color:var(--muted)">20 ${t('agree_specialists')}</div>
+        </div>
+      </div>
+      ${top?`
+      <div style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);border-radius:14px;padding:18px;margin-bottom:16px">
+        <div style="font-size:11px;color:#93c5fd;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">${t('top_dx')}</div>
+        <div style="font-size:24px;font-weight:900;color:#fff;margin-bottom:10px">${top.diagnosis}</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="rank-bar-bg"><div class="rank-fill" id="rf-top" style="background:#3b82f6"></div></div>
+          <span style="color:#93c5fd;font-weight:800;font-size:20px">${top.avg_confidence}%</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">${top.votes} ${t('votes')} · ${(top.specialists||[]).slice(0,4).join(', ')}${top.specialists?.length>4?' +'+(top.specialists.length-4):''}</div>
+      </div>`:''}
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+        ${ranked.slice(1).map((dx,i)=>`
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="font-size:13px;color:#cbd5e1">${i+2}. ${dx.diagnosis}</span>
+              <span style="font-size:13px;font-weight:700;color:${colors[i+1]||'#64748b'}">${dx.avg_confidence}%</span>
+            </div>
+            <div class="rank-bar-bg"><div class="rank-fill" id="rf-${i}" style="background:${colors[i+1]||'#64748b'}"></div></div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">${dx.votes} ${t('votes')}</div>
+          </div>`).join('')}
+      </div>
+      <div style="border-top:1px solid rgba(255,255,255,.05);padding-top:16px">
+        <div style="font-family:monospace;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 16px;font-size:13px;color:#4ade80;margin-bottom:10px">$ clawhub install meddebate</div>
+        <div style="display:flex;gap:8px">
+          <button onclick="shareResult('${top?.diagnosis||''}')" class="submit-btn" style="flex:1">${t('share')}</button>
+          <button onclick="resetToLanding()" class="skip-btn" style="flex:1">${t('newcase2')}</button>
+        </div>
+      </div>
+    </div>`;
+
+  requestAnimationFrame(()=>setTimeout(()=>{
+    const tf2 = document.getElementById('rf-top');
+    if(tf2&&top) tf2.style.width=`${top.avg_confidence}%`;
+    ranked.slice(1).forEach((_,i)=>{
+      const b = document.getElementById(`rf-${i}`);
+      if(b) b.style.width=`${ranked[i+1].avg_confidence}%`;
+    });
+  },200));
+
+  cc.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function shareResult(dx) {
+  const txt = `I gave 20 AI doctors a mystery case.\nThey debated and reached consensus: ${dx}\n\nclawhub install meddebate`;
+  if(navigator.share) navigator.share({title:'MedDebate Result',text:txt}).catch(()=>{});
+  else navigator.clipboard.writeText(txt).then(()=>alert('Copied!'));
+}
+
+function resetToLanding() {
+  document.getElementById('landing').style.display = 'block';
+  document.getElementById('debate-room').style.display = 'none';
+  clearInterval(S.timer);
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+loadDemos();
+updateText();
+</script>
+</body>
+</html>
